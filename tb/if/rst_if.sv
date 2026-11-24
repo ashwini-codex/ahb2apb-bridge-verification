@@ -8,8 +8,8 @@ interface rst_if (input logic clk);
 
   // Assert reset asynchronously (mid-cycle, like a real reset pin) for n cycles,
   // then release it synchronously just after a rising edge.
-  task automatic pulse(int unsigned n_cycles, int unsigned assert_delay_ns = 3);
-    #(assert_delay_ns);
+  task automatic pulse(int unsigned n_cycles);
+    #3;   // 3ns into the cycle: asynchronous to HCLK
     rst_n = 1'b0;
     repeat (n_cycles) @(posedge clk);
     #1 rst_n = 1'b1;

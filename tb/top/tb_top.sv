@@ -63,7 +63,12 @@ module tb_top;
     bit       timed_out = 0;
     string    wave_file;
 
-    rif.rst_n = 1'b0;
+    // Power-on reset. rst_n starts high and falls at 1ns so that the DUT's
+    // asynchronous reset sees a real negedge. (Driving 0 at t=0 gives no
+    // edge, so flops would keep their random --x-initial values until the
+    // first clock edge. See docs/debug_log.md, bug #1.)
+    rif.rst_n = 1'b1;
+    #1 rif.rst_n = 1'b0;
 
     cfg = new();
     cfg.parse_plusargs();

@@ -130,11 +130,13 @@ module ahb2apb_bridge #(
 
   // Byte-lane strobes for a write on a 32-bit little-endian bus [APB 3.1.2]
   function automatic logic [3:0] strobe(input logic [2:0] size, input logic [1:0] a);
+    logic [3:0] s;
     case (size)
-      3'd0:    return 4'b0001 << a;                   // byte
-      3'd1:    return a[1] ? 4'b1100 : 4'b0011;      // halfword
-      default: return 4'b1111;                        // word
+      3'd0:    s = 4'b0001 << a;                      // byte
+      3'd1:    s = a[1] ? 4'b1100 : 4'b0011;         // halfword
+      default: s = 4'b1111;                           // word
     endcase
+    return s;
   endfunction
 
   // ---------------------------------------------------------------------------
@@ -259,11 +261,15 @@ module ahb2apb_bridge #(
 `endif
         end
 
+        // Unreachable: state_q only ever holds the six encodings above.
+        // Kept for safe recovery; excluded from code coverage.
+        /* verilator coverage_off */
         default: begin
           state_q     <= ST_IDLE;
           hreadyout_q <= 1'b1;
           hresp_q     <= 1'b0;
         end
+        /* verilator coverage_on */
       endcase
     end
   end
@@ -312,7 +318,9 @@ module ahb2apb_bridge #(
   //   HBURST     - per-beat conversion does not need the burst type
   //   HTRANS[0]  - NONSEQ vs SEQ treated identically (each beat is a new APB transfer)
   //   HPROT[3:2] - bufferable/cacheable have no APB equivalent
+  /* verilator coverage_off */
   logic unused_ok;
   assign unused_ok = &{1'b0, HBURST, HTRANS[0], HPROT[3:2]};
+  /* verilator coverage_on */
 
 endmodule

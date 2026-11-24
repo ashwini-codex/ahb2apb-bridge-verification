@@ -156,7 +156,7 @@ class ahb_driver;
     end else begin
       dp_valid = 0;
     end
-    if (tr == BUSY) n_busy++;
-    if (tr == IDLE || cancelled) n_idle++;
+    if (tr == BUSY && !cancelled) n_busy++;
+    if (tr == IDLE || cancelled)  n_idle++;
   endtask
 endclass

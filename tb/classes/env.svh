@@ -57,11 +57,12 @@ class env;
   endtask
 
   // Sample reset coverage: what was the bridge doing when reset hit?
+  // (The power-on reset is not sampled.)
   local task watch_reset();
+    @(posedge ahb_vif.HRESETn);
     forever begin
       @(negedge ahb_vif.HRESETn);
-      if ($time > 0)
-        cov.sample_reset(apb_mon.in_xfer ? 2 : (ahb_mon.dp_valid ? 1 : 0));
+      cov.sample_reset(apb_mon.in_xfer ? 2 : (ahb_mon.dp_valid ? 1 : 0));
     end
   endtask
 

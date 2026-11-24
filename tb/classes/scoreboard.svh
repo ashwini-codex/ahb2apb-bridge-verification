@@ -172,7 +172,7 @@ class scoreboard;
              n_checked, n_pass, n_fail, n_mismatch_fields);
     $display("  OKAY                : %0d   (writes %0d, reads data-checked %0d)", n_okay, n_writes, n_reads_checked);
     $display("  ERROR decode/slverr/size : %0d / %0d / %0d", n_err_decode, n_err_slverr, n_err_size);
-    $display("  APB left unmatched  : %0d   flushed by reset: %0d   resets: %0d",
+    $display("  APB left unmatched  : %0d   flushed by reset: %0d   resets (incl. power-on): %0d",
              apb_q.size(), n_flushed_apb, n_resets);
   endfunction
 endclass
