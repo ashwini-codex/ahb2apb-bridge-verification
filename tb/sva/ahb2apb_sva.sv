@@ -103,7 +103,7 @@ module ahb2apb_sva #(
   end
 
   // ===========================================================================
-  // APB sequencing  [IHI0024 4.1 operating states]
+  // APB sequencing  [APB: Operating states]
   // ===========================================================================
   // At most one slave selected
   `AHB2APB_CHECK(ap_psel_onehot0,           $onehot0(PSEL))
@@ -120,7 +120,7 @@ module ahb2apb_sva #(
 
   // ===========================================================================
   // APB stability: SETUP->ACCESS and every wait state (PENABLE && !PREADY)
-  // [IHI0024 3.1/3.3: signals unchanged until the transfer completes]
+  // [APB: Write/Read transfers with wait states - signals unchanged until the transfer completes]
   // ===========================================================================
   `AHB2APB_CHECK(ap_stable_paddr,           apb_pending |=> $stable(PADDR))
   `AHB2APB_CHECK(ap_stable_pwrite,          apb_pending |=> $stable(PWRITE))
@@ -128,7 +128,7 @@ module ahb2apb_sva #(
   `AHB2APB_CHECK(ap_stable_pprot,           apb_pending |=> $stable(PPROT))
   `AHB2APB_CHECK(ap_stable_pstrb,           apb_pending |=> $stable(PSTRB))
   `AHB2APB_CHECK(ap_stable_pwdata,          (apb_pending && PWRITE) |=> $stable(PWDATA))
-  // PSTRB must be all-zero for reads [IHI0024 3.1.2]
+  // PSTRB must be all-zero for reads [APB: Write strobes]
   `AHB2APB_CHECK(ap_pstrb_zero_on_read,     ((PSEL != '0) && !PWRITE) |-> (PSTRB == '0))
 
   // ===========================================================================
@@ -153,17 +153,17 @@ module ahb2apb_sva #(
   `AHB2APB_CHECK(ah_slverr_to_error,        (apb_done &&  pslverr_s) |=> (HRESP && !HREADYOUT))
   // Read data returned to AHB is the PRDATA of the completing APB read
   `AHB2APB_CHECK(ah_hrdata_from_prdata,     (apb_done && !PWRITE && !pslverr_s) |=> (HRDATA == $past(prdata_s)))
-  // IDLE / BUSY / unselected: zero-wait OKAY [IHI0033 3.2]
+  // IDLE / BUSY / unselected: zero-wait OKAY [AHB-Lite: Transfer types]
   `AHB2APB_CHECK(ah_idle_busy_okay,         (HREADY && !(HSEL && HTRANS[1])) |=> (HREADYOUT && !HRESP))
 
   // ===========================================================================
-  // AHB two-cycle ERROR response [IHI0033 5.1.3]
+  // AHB two-cycle ERROR response [AHB-Lite: Error response]
   // ===========================================================================
   `AHB2APB_CHECK(ah_error_two_cycle,        (HRESP && !HREADYOUT) |=> (HRESP && HREADYOUT))
   `AHB2APB_CHECK(ah_error_second_has_first, (HRESP && HREADYOUT) |-> $past(HRESP && !HREADYOUT))
 
   // ===========================================================================
-  // AHB master-side stability during wait states [IHI0033 3.6.1]
+  // AHB master-side stability during wait states [AHB-Lite: Waited transfers]
   // (checks the TB driver; while HREADY is low the pending NONSEQ/SEQ address
   //  phase must not change, except that the master may cancel the burst after the first ERROR cycle)
   // ===========================================================================
@@ -174,7 +174,7 @@ module ahb2apb_sva #(
   // ===========================================================================
   // Reset
   // ===========================================================================
-  // While reset is asserted: no APB transfer, AHB ready with OKAY [IHI0033 7.1.2]
+  // While reset is asserted: no APB transfer, AHB ready with OKAY [AHB-Lite: Reset]
   `AHB2APB_CHECK_NORST(ar_reset_values,     !HRESETn |-> (HREADYOUT && !HRESP && (PSEL == '0) && !PENABLE))
   // No X/Z on control outputs once out of reset. (Only meaningful on a 4-state
   // simulator; Verilator is 2-state, see README "Limitations".)

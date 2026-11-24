@@ -7,6 +7,7 @@
 #   make waves TEST=<t> SEED=<n>  run with VCD dump and open it in Surfer
 #   make cov                      regression with coverage merge + reports
 #   make bugs                     bug-injection campaign (INJECT_BUG_1..4)
+#   make results                  regress + coverage + bugs, rewrite docs/results/*.md
 #   make lint                     verilator -Wall lint of the RTL
 #   make clean
 # =============================================================================
@@ -57,10 +58,10 @@ RUN_ARGS   = +TEST=$(TEST) +SEED=$(SEED) +verilator+seed+$(SEED) +verilator+rand
              +verilator+coverage+file+$(COV_DIR)/$(VARIANT)_$(TEST)_$(SEED).dat \
              $(if $(NUM_TXNS),+NUM_TXNS=$(NUM_TXNS)) $(PLUSARGS)
 
-.PHONY: compile run regress waves cov bugs lint clean help
+.PHONY: compile run regress waves cov bugs results lint clean help
 
 help:
-	@sed -n '2,14p' Makefile
+	@sed -n '2,15p' Makefile
 
 compile: $(SIM_BIN)
 
@@ -88,6 +89,10 @@ cov: compile
 
 bugs:
 	python3 scripts/bug_inject.py
+
+results: compile
+	python3 scripts/regress.py --coverage --save
+	python3 scripts/bug_inject.py --save
 
 lint:
 	$(VERILATOR) --lint-only -Wall $(RTL_SRCS)

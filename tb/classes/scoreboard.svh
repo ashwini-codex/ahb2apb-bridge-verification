@@ -69,7 +69,7 @@ class scoreboard;
         ok = 0;
         n_mismatch_fields++;
         if (n_mismatch_fields <= max_print)
-          $display("[%0t] SB MISMATCH  APB transfer started for %s address 0x%08h: %s",
+          $display("[%0t] SB MISMATCH  UNEXPECTED_APB transfer for %s address 0x%08h: %s",
                    $time, bad_size ? "illegal-size" : "UNMAPPED", b.addr, apb_q[0].convert2string());
         apb_q.delete();
       end
@@ -81,14 +81,14 @@ class scoreboard;
         ok = 0;
         n_mismatch_fields++;
         if (n_mismatch_fields <= max_print)
-          $display("[%0t] SB MISMATCH  no APB transfer for mapped addr=0x%08h (expected PSEL[%0d])",
+          $display("[%0t] SB MISMATCH  MISSING_APB transfer for mapped addr=0x%08h (expected PSEL[%0d])",
                    $time, b.addr, slv);
       end else begin
         if (apb_q.size() > 1) begin
           ok = 0;
           n_mismatch_fields++;
           if (n_mismatch_fields <= max_print)
-            $display("[%0t] SB MISMATCH  %0d APB transfers queued for one AHB beat addr=0x%08h",
+            $display("[%0t] SB MISMATCH  EXTRA_APB: %0d APB transfers queued for one AHB beat addr=0x%08h",
                      $time, apb_q.size(), b.addr);
         end
         p   = apb_q.pop_front();
@@ -101,7 +101,8 @@ class scoreboard;
         if (p.no_setup) begin
           ok = 0;
           n_mismatch_fields++;
-          $display("[%0t] SB MISMATCH  APB transfer for addr=0x%08h had no SETUP phase", $time, b.addr);
+          if (n_mismatch_fields <= max_print)
+            $display("[%0t] SB MISMATCH  NO_SETUP: APB transfer for addr=0x%08h had no SETUP phase", $time, b.addr);
         end
         // AHB response must reflect PSLVERR
         ok &= chk("HRESP", b, 32'(p.pslverr), 32'(b.resp));

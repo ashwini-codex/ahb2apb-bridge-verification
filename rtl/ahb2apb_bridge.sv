@@ -6,6 +6,7 @@
 // References:
 //   [AHB] ARM IHI 0033  AMBA 3 AHB-Lite Protocol Specification
 //   [APB] ARM IHI 0024  AMBA APB Protocol Specification (APB4: PPROT/PSTRB/PSLVERR)
+//   Citations below name the relevant spec section by its title.
 //
 // Micro-architecture summary
 // --------------------------
@@ -13,24 +14,24 @@
 //   Bursts need no special handling: AHB already gives the address of every
 //   beat, so HBURST is informational only (unused here, kept on the port list
 //   for a complete AHB-Lite slave interface).
-// * IDLE and BUSY transfers get a zero-wait OKAY response [AHB 3.2], which is
+// * IDLE and BUSY transfers get a zero-wait OKAY response [AHB-Lite: Transfer types], which is
 //   automatic here because they never leave the IDLE state.
 // * The AHB address phase is registered when (HSEL & HREADY & HTRANS[1]).
-//   Write data arrives one cycle later, in the data phase [AHB 3.1], so writes
+//   Write data arrives one cycle later, in the data phase [AHB-Lite: Basic transfers], so writes
 //   spend one cycle in ST_WDATA latching HWDATA before APB SETUP.
 // * HREADYOUT is held low while the APB transfer is in progress, which stalls
-//   the AHB master (wait states) [AHB 3.3].
+//   the AHB master (wait states) [AHB-Lite: Waited transfers].
 // * All AHB response outputs (HREADYOUT, HRESP, HRDATA) and all APB outputs are
 //   driven from flops / state decode. There is no combinational path from
 //   PREADY/PSLVERR to HREADYOUT/HRESP, at the cost of one extra cycle per
 //   transfer.
-// * ERROR response is the mandatory two-cycle response [AHB 5.1.3]:
+// * ERROR response is the mandatory two-cycle response [AHB-Lite: Error response]:
 //      cycle 1: HRESP=1, HREADYOUT=0  (ST_ERR1)
 //      cycle 2: HRESP=1, HREADYOUT=1  (ST_ERR2)
 //   It is produced for: APB PSLVERR, an address outside the APB map, and
 //   HSIZE wider than the 32-bit data bus.
 //
-// FSM (APB protocol states are SETUP and ACCESS [APB 4.1]):
+// FSM (APB protocol states are SETUP and ACCESS [APB: Operating states]):
 //
 //            accept & mapped & read                       PREADY & !PSLVERR
 //   ST_IDLE ---------------------------> ST_SETUP --> ST_ACCESS ----------------> ST_IDLE
@@ -84,7 +85,7 @@ module ahb2apb_bridge #(
   // ---------------------------------------------------------------------------
   // Local definitions
   // ---------------------------------------------------------------------------
-  // HTRANS encoding [AHB 3.2]: 00 IDLE, 01 BUSY, 10 NONSEQ, 11 SEQ.
+  // HTRANS encoding [AHB-Lite: Transfer types]: 00 IDLE, 01 BUSY, 10 NONSEQ, 11 SEQ.
   // HTRANS[1] alone distinguishes a real transfer (NONSEQ/SEQ) from IDLE/BUSY.
 
   typedef enum logic [2:0] {
@@ -128,7 +129,7 @@ module ahb2apb_bridge #(
     return d;
   endfunction
 
-  // Byte-lane strobes for a write on a 32-bit little-endian bus [APB 3.1.2]
+  // Byte-lane strobes for a write on a 32-bit little-endian bus [APB: Write strobes]
   function automatic logic [3:0] strobe(input logic [2:0] size, input logic [1:0] a);
     logic [3:0] s;
     case (size)
@@ -141,7 +142,7 @@ module ahb2apb_bridge #(
 
   // ---------------------------------------------------------------------------
   // AHB address-phase qualification
-  //   A transfer is sampled only when HSEL & HREADY & (NONSEQ|SEQ) [AHB 3.1, 4.1].
+  //   A transfer is sampled only when HSEL & HREADY & (NONSEQ|SEQ) [AHB-Lite: Basic transfers].
   //   The bridge can only take it when it is ready itself (HREADYOUT high), which
   //   in a correct system is implied by HREADY, but is also checked explicitly.
   // ---------------------------------------------------------------------------
@@ -177,7 +178,7 @@ module ahb2apb_bridge #(
   always_ff @(posedge HCLK or negedge HRESETn) begin
     if (!HRESETn) begin
       state_q     <= ST_IDLE;
-      hreadyout_q <= 1'b1;   // AHB: HREADYOUT must be high during/after reset [AHB 7.1.2]
+      hreadyout_q <= 1'b1;   // AHB: HREADYOUT must be high during/after reset [AHB-Lite: Reset]
       hresp_q     <= 1'b0;
       hrdata_q    <= '0;
       write_q     <= 1'b0;
@@ -194,7 +195,7 @@ module ahb2apb_bridge #(
         ST_IDLE, ST_ERR2: begin
           if (accept) begin
             write_q <= HWRITE;
-            strb_q  <= HWRITE ? strobe(HSIZE, HADDR[1:0]) : 4'b0000; // PSTRB=0 on reads [APB 3.1.2]
+            strb_q  <= HWRITE ? strobe(HSIZE, HADDR[1:0]) : 4'b0000; // PSTRB=0 on reads [APB: Write strobes]
             // HPROT[0]=data/opcode, HPROT[1]=privileged  ->  PPROT[2]=instruction, PPROT[0]=privileged.
             // AHB-Lite has no security attribute, so PPROT[1] (non-secure) is driven 0 (secure).
             prot_q  <= {~HPROT[0], 1'b0, HPROT[1]};
@@ -211,25 +212,25 @@ module ahb2apb_bridge #(
               hresp_q     <= 1'b0;
             end
           end else begin
-            // IDLE / BUSY / not selected: zero-wait OKAY [AHB 3.2]
+            // IDLE / BUSY / not selected: zero-wait OKAY [AHB-Lite: Transfer types]
             state_q     <= ST_IDLE;
             hreadyout_q <= 1'b1;
             hresp_q     <= 1'b0;
           end
         end
 
-        // Write data is valid in the cycle after the address phase [AHB 3.1]
+        // Write data is valid in the cycle after the address phase [AHB-Lite: Basic transfers]
         ST_WDATA: begin
           pwdata_q <= HWDATA;
           state_q  <= ST_SETUP;
         end
 
-        // APB SETUP lasts exactly one cycle, then always ACCESS [APB 4.1]
+        // APB SETUP lasts exactly one cycle, then always ACCESS [APB: Operating states]
         ST_SETUP: begin
           state_q <= ST_ACCESS;
         end
 
-        // APB ACCESS: hold everything until PREADY [APB 3.1.2 / 3.3]
+        // APB ACCESS: hold everything until PREADY [APB: Operating states, wait states]
         ST_ACCESS: begin
           if (pready_m) begin
             if (pslverr_m) begin
@@ -245,7 +246,7 @@ module ahb2apb_bridge #(
           end
         end
 
-        // ERROR cycle 1 -> cycle 2 [AHB 5.1.3]
+        // ERROR cycle 1 -> cycle 2 [AHB-Lite: Error response]
         ST_ERR1: begin
 `ifdef INJECT_BUG_3
           // BUG 3 (second ERROR cycle missing): returns to IDLE after the first

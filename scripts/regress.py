@@ -63,8 +63,6 @@ def run_one(binary, test, seed, variant="default", extra=(), timeout=900):
                  reasons=(m.group(9) or "").strip())
     if rc != 0 and r["status"] == "PASS":
         r["status"], r["reasons"] = "FAIL", f"exit code {rc}"
-    if r["status"] == "PASS" and rc != 0:
-        r["status"] = "FAIL"
     return r
 
 

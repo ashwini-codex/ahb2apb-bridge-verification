@@ -48,7 +48,7 @@ class ahb_txn;
   // Only sizes up to the 32-bit bus width
   constraint c_size { size inside {BYTE, HALF, WORD}; }
 
-  // Address aligned to HSIZE [AHB 3.4]
+  // Address aligned to HSIZE [AHB-Lite: Transfer size]
   constraint c_align {
     (size == HALF) -> addr[0]   == 1'b0;
     (size == WORD) -> addr[1:0] == 2'b00;
@@ -59,7 +59,7 @@ class ahb_txn;
                  WRAP8  := w_burst[4], INCR8  := w_burst[5], WRAP16 := w_burst[6], INCR16 := w_burst[7] };
   }
 
-  // Number of beats from HBURST [AHB 3.5]
+  // Number of beats from HBURST [AHB-Lite: Burst operation]
   constraint c_beats {
     (burst == SINGLE)                -> beats == 1;
     (burst == INCR)                  -> beats inside {[1 : max_incr_beats]};
@@ -68,7 +68,7 @@ class ahb_txn;
     (burst inside {WRAP16, INCR16})  -> beats == 16;
   }
 
-  // Incrementing bursts must not cross a 1KB boundary [AHB 3.5].
+  // Incrementing bursts must not cross a 1KB boundary [AHB-Lite: Burst operation].
   // Wrapping bursts never can: the wrap window is at most 16 x 4 = 64 bytes and is aligned.
   constraint c_1kb {
     (burst inside {INCR, INCR4, INCR8, INCR16}) ->
@@ -118,7 +118,7 @@ class ahb_txn;
     return burst inside {WRAP4, WRAP8, WRAP16};
   endfunction
 
-  // Address of beat i: incrementing, or wrapping at (beats x size) boundary [AHB 3.5.2]
+  // Address of beat i: incrementing, or wrapping at (beats x size) boundary [AHB-Lite: Burst operation]
   function logic [31:0] addr_of(int unsigned i);
     int unsigned nbytes = bytes_per_beat();
     if (is_wrap()) begin

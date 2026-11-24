@@ -7,6 +7,7 @@ class coverage;
   int          c_size;
   bit          c_write;
   int          c_region;     // 0..3 = slave, -1 = unmapped
+  int          c_unmap_zone; // which unmapped zone (only sampled for unmapped beats)
   bit          c_resp;
   int          c_err_cause;  // 0 none, 1 decode, 2 PSLVERR, 3 illegal size
   bit          c_b2b;
@@ -30,6 +31,13 @@ class coverage;
     cp_b2b:        coverpoint c_b2b      { bins gap = {0}; bins back2back = {1}; }
     cp_trans:      coverpoint c_trans    { bins nonseq = {NONSEQ}; bins seq = {SEQ}; }
     cp_after_busy: coverpoint c_after_busy { bins no = {0}; bins yes = {1}; }
+    // Which part of the unmapped space was hit (decode edge cases)
+    cp_unmap_zone: coverpoint c_unmap_zone iff (c_region < 0) {
+      bins below_s0  = {0};   // 0x3FFF_F000-0x3FFF_FFFF
+      bins s2_s3_gap = {1};   // 0x4000_2800-0x4000_3FFF (hole after the 2KB slave)
+      bins above_s3  = {2};   // 0x4000_6000-0x4000_FFFF
+      bins far       = {3};   // anywhere else
+    }
     x_burst_size:  cross cp_burst, cp_size;
     x_rw_region:   cross cp_rw, cp_region;
     x_rw_b2b:      cross cp_rw, cp_b2b;
@@ -62,6 +70,9 @@ class coverage;
     c_size       = int'(b.size);
     c_write      = b.write;
     c_region     = s;
+    c_unmap_zone = (b.addr >= 32'h3FFF_F000 && b.addr < 32'h4000_0000) ? 0 :
+                   (b.addr >= 32'h4000_2800 && b.addr < 32'h4000_4000) ? 1 :
+                   (b.addr >= 32'h4000_6000 && b.addr < 32'h4001_0000) ? 2 : 3;
     c_resp       = b.resp;
     c_err_cause  = !b.resp ? 0 : (b.size > 2 ? 3 : (s < 0 ? 1 : 2));
     c_b2b        = b.b2b;
@@ -92,8 +103,9 @@ class coverage;
              cg_ahb.cp_burst.get_inst_coverage(), cg_ahb.cp_size.get_inst_coverage(), cg_ahb.cp_rw.get_inst_coverage());
     $display("    cp_region     %6.2f %%   cp_resp       %6.2f %%   cp_err_cause %6.2f %%",
              cg_ahb.cp_region.get_inst_coverage(), cg_ahb.cp_resp.get_inst_coverage(), cg_ahb.cp_err_cause.get_inst_coverage());
-    $display("    cp_b2b        %6.2f %%   cp_trans      %6.2f %%   cp_after_busy %5.2f %%",
-             cg_ahb.cp_b2b.get_inst_coverage(), cg_ahb.cp_trans.get_inst_coverage(), cg_ahb.cp_after_busy.get_inst_coverage());
+    $display("    cp_b2b        %6.2f %%   cp_trans      %6.2f %%   cp_after_busy %5.2f %%   cp_unmap_zone %6.2f %%",
+             cg_ahb.cp_b2b.get_inst_coverage(), cg_ahb.cp_trans.get_inst_coverage(), cg_ahb.cp_after_busy.get_inst_coverage(),
+             cg_ahb.cp_unmap_zone.get_inst_coverage());
     $display("    x_burst_size  %6.2f %%   x_rw_region   %6.2f %%   x_rw_b2b     %6.2f %%   x_rw_err %6.2f %%",
              cg_ahb.x_burst_size.get_inst_coverage(), cg_ahb.x_rw_region.get_inst_coverage(),
              cg_ahb.x_rw_b2b.get_inst_coverage(), cg_ahb.x_rw_err.get_inst_coverage());

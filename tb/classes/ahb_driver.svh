@@ -5,15 +5,15 @@
 // on the bus, together with HWDATA for beat k-1 (whose address phase has
 // already been accepted). It then waits for an edge where HREADY is high. At
 // that edge beat k-1's data phase completes and beat k's address phase is
-// accepted [AHB 3.1].
+// accepted [AHB-Lite: Basic transfers].
 //
 // Rules followed:
 //   * address/control are changed only after an edge with HREADY high, so they
-//     are stable through wait states [AHB 3.6.1]
-//   * HWDATA is held for the whole (possibly stalled) data phase [AHB 3.1]
-//   * BUSY cycles between burst beats carry the address of the next beat [AHB 3.2]
+//     are stable through wait states [AHB-Lite: Waited transfers]
+//   * HWDATA is held for the whole (possibly stalled) data phase [AHB-Lite: Basic transfers]
+//   * BUSY cycles between burst beats carry the address of the next beat [AHB-Lite: Transfer types]
 //   * on the first ERROR cycle, the remaining beats of the burst may be
-//     cancelled by driving IDLE [AHB 5.1.3]
+//     cancelled by driving IDLE [AHB-Lite: Error response]
 // =============================================================================
 class ahb_driver;
   virtual ahb_if.driver  vif;

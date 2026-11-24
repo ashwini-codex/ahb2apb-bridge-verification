@@ -14,7 +14,7 @@ package ahb2apb_cfg_pkg;
   localparam logic [NUM_SLV-1:0][31:0] SLV_BASE = {32'h4000_4000, 32'h4000_2000, 32'h4000_1000, 32'h4000_0000};
   localparam logic [NUM_SLV-1:0][31:0] SLV_SIZE = {32'h0000_2000, 32'h0000_0800, 32'h0000_1000, 32'h0000_1000};
 
-  // AHB encodings [IHI0033]
+  // AHB encodings [AHB-Lite, ARM IHI 0033]
   typedef enum logic [1:0] { IDLE = 2'b00, BUSY = 2'b01, NONSEQ = 2'b10, SEQ = 2'b11 } htrans_e;
   typedef enum logic [2:0] { SINGLE = 3'd0, INCR = 3'd1, WRAP4 = 3'd2, INCR4 = 3'd3,
                              WRAP8  = 3'd4, INCR8 = 3'd5, WRAP16 = 3'd6, INCR16 = 3'd7 } hburst_e;
@@ -29,7 +29,7 @@ package ahb2apb_cfg_pkg;
     return -1;
   endfunction
 
-  // Expected PSTRB for an AHB write (0 for reads) [IHI0024 3.1.2]
+  // Expected PSTRB for an AHB write (0 for reads) [APB: Write strobes]
   function automatic logic [3:0] exp_strobe(input logic write, input logic [2:0] size, input logic [1:0] a);
     if (!write) return 4'b0000;
     case (size)
