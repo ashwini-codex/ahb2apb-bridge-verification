@@ -221,3 +221,18 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# ---- Simulation outputs (Verilator flow) ----
+build/
+obj_dir/
+logs/
+cov/
+waves/
+*.vcd
+*.fst
+*.fsdb
+coverage.dat
+*.wlf
+# keep the checked-in regression results
+!docs/results/
+!docs/results/**
